@@ -1,40 +1,34 @@
 ﻿using Dapper;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web;
-using ZavenDotNetInterview.App.Models;
-using ZavenDotNetInterview.App.Models.Context;
+using ZavenDotNetInterview.Database.Context;
+using ZavenDotNetInterview.Database.Entities;
 
 namespace ZavenDotNetInterview.App.Repositories
 {
-    public class LogsRepository
+    public class LogsRepository : ILogsRepository
     {
-        public LogsRepository()
+        private readonly ZavenDotNetInterviewContext _context;
+        public LogsRepository(ZavenDotNetInterviewContext context)
         {
+            _context = context;
         }
 
-        public List<Log> GetJobsLogs(Guid jobId)
+        public async Task<List<Log>> GetJobsLogs(Guid jobId)
         {
-            using (var connection = new SqlConnection(@"data source=DESKTOP-MQ0KC6D\SQLEXPRESS;initial catalog=ZavenDotNetInterview;integrated security=True;MultipleActiveResultSets=True;App=EntityFramework&quot providerName = &quotSystem.Data.SqlClient"))
-            {
-                var logs = connection.Query<Log>($"SELECT * FROM Logs WHERE JobId = {jobId}").ToList();
-                return logs;
-            }
+            return await _context.Logs.Where(x => x.JobId == jobId).ToListAsync();
         }
 
-        public Log InsertLog(Log log)
+        public void InsertLog(Log log)
         {
-            using (var connection = new SqlConnection(@"data source=DESKTOP-MQ0KC6D\SQLEXPRESS;initial catalog=ZavenDotNetInterview;integrated security=True;MultipleActiveResultSets=True;App=EntityFramework&quot providerName = &quotSystem.Data.SqlClient"))
-            {
-                string sql = "INSERT INTO Logs (Id, Description, CreatedAt, JobId) Values (@Id, @Description, @CreatedAt, @JobId);";
-
-                log.CreatedAt = DateTime.UtcNow;
-                var newLog = connection.Execute(sql, new { Id = log.Id, Description = log.Description, CreatedAt = log.CreatedAt, JobId = log.JobId });
-
-                return log;
-            }
+            log.CreationDate = DateTime.UtcNow;
+            _context.Logs.Add(log);
+                
         }
     }
 }

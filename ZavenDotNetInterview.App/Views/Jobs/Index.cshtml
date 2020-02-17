@@ -1,13 +1,20 @@
-﻿@model List<ZavenDotNetInterview.App.Models.Job>
+﻿@model List<ZavenDotNetInterview.Database.Entities.Job>
 
 @{
     ViewBag.Title = "Index";
 }
 
-<h2>Index</h2>
+<h2>List of jobs</h2>
+<div class="row buttons-container">
+    <div class="col-sm-6">
+        @Html.ActionLink("Create New Job", "Create", null, new { @class = "btn btn-success" })
+    </div>
+    <div class="col-sm-6">
+        @Html.ActionLink("Process Jobs", "Process", null, new { @class = "btn btn-success" })
+    </div>
+</div>
 
-@Html.ActionLink("Create", "Create")
-@Html.ActionLink("Process", "Process")
+
 
 <table class="table">
     <tr>
@@ -16,6 +23,9 @@
         </th>
         <th>
             @Html.DisplayName("Status")
+        </th>
+        <th>
+            @Html.DisplayName("Creation Date")
         </th>
         <th></th>
     </tr>
@@ -30,7 +40,10 @@
                 @Html.DisplayFor(modelItem => job.Status)
             </td>
             <td>
-                @Html.ActionLink("Details", "Details", new { jobId = job.Id })
+                @Html.DisplayFor(modelItem => job.CreationDate)
+            </td>
+            <td>
+                @Html.ActionLink("Details", "Details", new { jobId = job.Id }, new { @class = "btn btn-info" })
             </td>
         </tr>
     }

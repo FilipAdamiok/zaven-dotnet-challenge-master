@@ -1,7 +1,97 @@
-﻿@*TODO: Use Razor Syntax*@
+﻿@model ZavenDotNetInterview.Database.Entities.Job
 @{
     ViewBag.Title = "Details";
 }
 
 <h2>Details</h2>
 
+<div class="row m-5 job-details">
+    <div class="col-sm-12">
+        <div class="row">
+            <div class="col-sm-5">
+                @Html.DisplayName("Name"):
+            </div>
+            <div class="col-sm-7 values">
+                @Html.DisplayFor(x => x.Name)
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-5">
+                @Html.DisplayName("Status"):
+            </div>
+            <div class="col-sm-7 values">
+                @Html.DisplayFor(x => x.Status)
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-5">
+                @Html.DisplayName("Process Date"):
+            </div>
+            <div class="col-sm-7 values">
+                @if (Model.StartDateOfJobProcess == null)
+                {
+                    <span>Not Defined</span>
+                }
+                else
+                {
+                    @Html.DisplayFor(x => x.StartDateOfJobProcess)
+                }
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-5">
+                @Html.DisplayName("Date Of Last Update"):
+            </div>
+            <div class="col-sm-7 values">
+                @Html.DisplayFor(x => x.LastUpdatedDate)
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-5">
+                @Html.DisplayName("Fail Attempts to Process Job"):
+            </div>
+            <div class="col-sm-7 values">
+                @Html.DisplayFor(x => x.FailureCount)
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-5">
+                @Html.DisplayName("Creation Date"):
+            </div>
+            <div class="col-sm-7 values">
+                @Html.DisplayFor(x => x.CreationDate)
+            </div>
+        </div>
+    </div>
+</div>
+<h2>Logs</h2>
+<table class="table">
+    <tr>
+        <th>
+            @Html.DisplayName("Id")
+        </th>
+        <th>
+            @Html.DisplayName("Description")
+        </th>
+        <th>
+            @Html.DisplayName("Creation Date")
+        </th>
+        <th></th>
+    </tr>
+
+    @foreach (var log in Model.Logs)
+    {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => log.Id)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => log.Description)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => log.CreationDate)
+            </td>
+        </tr>
+     }
+
+</table>

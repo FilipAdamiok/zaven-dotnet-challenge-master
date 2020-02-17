@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-using ZavenDotNetInterview.App.Models;
+using ZavenDotNetInterview.Database.Entities;
 
 namespace ZavenDotNetInterview.App.Extensions
 {
@@ -11,6 +8,11 @@ namespace ZavenDotNetInterview.App.Extensions
         public static void ChangeStatus(this Job job, JobStatus newStatus)
         {
             job.Status = newStatus;
+        }
+
+        public static void ChangeLastUpdatedDate(this Job job)
+        {
+            job.LastUpdatedDate = DateTime.Now;
         }
     }
 }

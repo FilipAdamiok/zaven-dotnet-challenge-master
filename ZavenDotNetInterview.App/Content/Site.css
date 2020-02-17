@@ -1,6 +1,7 @@
 ﻿body {
     padding-top: 50px;
     padding-bottom: 20px;
+    font-size: 16px;
 }
 
 /* Set padding to keep content from hitting the edges */
@@ -15,4 +16,35 @@ select,
 textarea {
     max-width: 280px;
 }
+
+.buttons-container {
+    margin: 30px 0;
+    text-align: center;
+}
+
+.field-validation-valid {
+    color: red;
+}
+
+.validation {
+    color: red;
+}
+
+.m-5 {
+    margin-bottom: 50px;
+    margin-top: 30px;
+}
+
+.job-details {
+    font-size: 20px;
+}
+
+.values {
+    font-weight: 600;
+}
+
+.btn {
+    font-size: 16px;
+}
+
 

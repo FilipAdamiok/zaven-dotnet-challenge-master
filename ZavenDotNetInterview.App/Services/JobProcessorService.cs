@@ -4,55 +4,122 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 using ZavenDotNetInterview.App.Extensions;
-using ZavenDotNetInterview.App.Models;
-using ZavenDotNetInterview.App.Models.Context;
 using ZavenDotNetInterview.App.Repositories;
+using ZavenDotNetInterview.Database.Context;
+using ZavenDotNetInterview.Database.Entities;
 
 namespace ZavenDotNetInterview.App.Services
 {
     public class JobProcessorService : IJobProcessorService
     {
-        private ZavenDotNetInterviewContext _ctx;
 
-        public JobProcessorService(ZavenDotNetInterviewContext ctx)
+
+        public async Task ProcessJobs(IEnumerable<Job> jobsToProcess, IUnitOfWork unitPrimary)
         {
-            _ctx = ctx;
-        }
 
-        public void ProcessJobs()
+            Parallel.ForEach(jobsToProcess, (currentJob) =>
         {
-            IJobsRepository jobsRepository = new JobsRepository(_ctx);
-            var allJobs = jobsRepository.GetAllJobs();
-            var jobsToProcess = allJobs.Where(x => x.Status == JobStatus.New).ToList();
-
-            jobsToProcess.ForEach(job => job.ChangeStatus(JobStatus.InProgress));
-                        
-            _ctx.SaveChanges();
-
-            Parallel.ForEach(jobsToProcess, (currentjob) =>
+            new Task(async () =>
             {
-                new Task(async () =>
+                using (var _unitOfWork = new UnitOfWork(new ZavenDotNetInterviewContext()))
                 {
-                    bool result = await this.ProcessJob(currentjob).ConfigureAwait(false);
+                    _unitOfWork.Jobs().AttachJob(currentJob);
+
+                    await ChangeStatusToInProcessAndLogBehaviour(currentJob, _unitOfWork);
+
+                    bool result = await ProcessJob(currentJob);
                     if (result)
                     {
-                        currentjob.ChangeStatus(JobStatus.Done);
+                        await ChangeStatusToDoneAndLogBehaviour(currentJob, _unitOfWork);
+
+                    }
+                    else if (currentJob.FailureCount < 4)
+                    {
+
+                        await ChangeStatusToFailedAndLogBehaviour(currentJob, _unitOfWork);
+
                     }
                     else
                     {
-                        _ctx.SaveChanges();
-                        currentjob.ChangeStatus(JobStatus.Failed);
+                        await ChangeStatusToClosedAndLogBehaviour(currentJob, _unitOfWork);
                     }
-                }).Start();
-            });
 
-            _ctx.SaveChanges();
+                    _unitOfWork.Dispose();
+
+                }
+            }).Start();
+        });
+            
+
+
         }
+
+        private async Task ChangeStatusToClosedAndLogBehaviour(Job currentJob, IUnitOfWork _unitOfWork)
+        {
+            currentJob.FailureCount++;
+            currentJob.ChangeStatus(JobStatus.Closed);
+
+            Log log = new Log
+            {
+                Id = Guid.NewGuid(),
+                JobId = currentJob.Id,
+                Description = "Status of job '" + currentJob.Name + "' has been changed to  Closed"
+            };
+
+
+            await AddLogAndCommitChanges(currentJob, log, _unitOfWork);
+        }
+
+        private async Task ChangeStatusToDoneAndLogBehaviour(Job currentJob, IUnitOfWork _unitOfWork)
+        {
+            currentJob.ChangeStatus(JobStatus.Done);
+
+            Log log = new Log
+            {
+                Id = Guid.NewGuid(),
+                JobId = currentJob.Id,
+                Description = "Status of job '" + currentJob.Name + "' has been changed to  Done"
+            };
+
+            await AddLogAndCommitChanges(currentJob, log, _unitOfWork);
+        }
+
+        private async Task ChangeStatusToFailedAndLogBehaviour(Job currentJob, IUnitOfWork _unitOfWork)
+        {
+            currentJob.FailureCount++;
+            currentJob.ChangeStatus(JobStatus.Failed);
+            
+            Log log = new Log
+            {
+                Id = Guid.NewGuid(),
+                JobId = currentJob.Id,
+                Description = "Status of job '" + currentJob.Name + "' has been changed to Failed"
+            };
+
+            await AddLogAndCommitChanges(currentJob, log, _unitOfWork);
+        }
+
+        private async Task ChangeStatusToInProcessAndLogBehaviour(Job currentJob, IUnitOfWork _unitOfWork)
+        {
+            currentJob.ChangeStatus(JobStatus.InProgress);
+            
+            Log log = new Log
+            {
+                Id = Guid.NewGuid(),
+                JobId = currentJob.Id,
+                Description = "Status of job '" + currentJob.Name + "' has been changed to  InProgress"
+            };
+           await AddLogAndCommitChanges(currentJob,log, _unitOfWork);
+            
+        }
+
+
 
         private async Task<bool> ProcessJob(Job job)
         {
             Random rand = new Random();
-            if (rand.Next(10) < 5)
+            int random = rand.Next(10);
+            if (random < 5)
             {
                 await Task.Delay(2000);
                 return false;
@@ -63,5 +130,14 @@ namespace ZavenDotNetInterview.App.Services
                 return true;
             }
         }
+
+
+        private async Task AddLogAndCommitChanges(Job currentJob, Log log, IUnitOfWork _unitOfWork)
+        {
+            currentJob.ChangeLastUpdatedDate();
+           _unitOfWork.Logs().InsertLog(log);
+            await _unitOfWork.CommitAsync();
+        }
+
     }
 }

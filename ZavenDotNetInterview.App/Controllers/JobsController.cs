@@ -1,39 +1,39 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
 using ZavenDotNetInterview.App.Models;
-using ZavenDotNetInterview.App.Models.Context;
-using ZavenDotNetInterview.App.Repositories;
 using ZavenDotNetInterview.App.Services;
+using ZavenDotNetInterview.App.Statics;
 
 namespace ZavenDotNetInterview.App.Controllers
 {
     public class JobsController : Controller
     {
-        private readonly IJobProcessorService _jobProcessorService;
-        public JobsController(IJobProcessorService jobProcessorService)
+
+        private readonly IJobTools _jobTools;
+        public JobsController(JobTools jobTools)
         {
-            _jobProcessorService = jobProcessorService;
+            _jobTools = jobTools;
+
         }
 
         // GET: Tasks
-        public ActionResult Index()
+        public async Task<ActionResult> Index()
         {
-            using (ZavenDotNetInterviewContext _ctx = new ZavenDotNetInterviewContext())
-            {
-                JobsRepository jobsRepository = new JobsRepository(_ctx);
-                List<Job> jobs = jobsRepository.GetAllJobs();
-                return View(jobs);
-            }
+            var listOfJobs = await _jobTools.GetAllJobs();
+
+            return View(listOfJobs.OrderBy(x=>x.CreationDate).ToList());
         }
 
         // POST: Tasks/Process
         [HttpGet]
-        public ActionResult Process()
+        public async Task<ActionResult> Process()
         {
-            _jobProcessorService.ProcessJobs();
+          await  _jobTools.ProcessJobs();
 
             return RedirectToAction("Index");
         }
@@ -41,33 +41,35 @@ namespace ZavenDotNetInterview.App.Controllers
         // GET: Tasks/Create
         public ActionResult Create()
         {
-            return View();
+            
+            return View(new JobViewModel { ErrorMessageDate ="", ErrorMessageName=""});
         }
 
         // POST: Tasks/Create
         [HttpPost]
-        public ActionResult Create(string name, DateTime doAfter)
+        public async Task<ActionResult> Create(JobViewModel jobViewModel)
         {
-            try
+            if (await _jobTools.ValidateModel(jobViewModel))
             {
-                using (ZavenDotNetInterviewContext _ctx = new ZavenDotNetInterviewContext())
+                try
                 {
-                    Job newJob = new Job() { Id = Guid.NewGuid(), DoAfter = doAfter, Name = name, Status = JobStatus.New };
-                    newJob = _ctx.Jobs.Add(newJob);
-                    _ctx.SaveChanges();
-                }
 
-                return RedirectToAction("Index");
+                  await  _jobTools.AddJobAndLogsToDatabase(JobCreator.CreateJob(jobViewModel));
+
+                    return RedirectToAction("Index");
+                }
+                catch (SqlException ex) //tutaj cos musisz zrobic
+                {
+                    return View();
+                }
             }
-            catch
-            {
-                return View();
-            }
+            return View(jobViewModel);
         }
 
-        public ActionResult Details(Guid jobId)
+        public async Task<ActionResult> Details(Guid jobId)
         {
-            return View();
+
+            return View(await _jobTools.GetJobDetails(jobId));
         }
     }
 }
